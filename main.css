@@ -1,0 +1,162 @@
+body {
+    margin: 0px;
+    font-family: 'Inter', sans-serif;
+    /* font-family: 'Roboto', sans-serif; */
+    background: #F8F8FF;
+    /* background: linear-gradient(180deg, #8640B7, #2135E1) no-repeat; */
+    height: 100vh;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0px auto;
+}
+
+h1 {
+    display: flex;
+    justify-content: center;
+    color: #48BF91;
+    padding: 1.5rem;
+}
+
+.buttonContainer {
+    display: flex;
+    justify-content: center;
+    /* align-items: center; */
+    /* width: 2rem; */
+    /* border:1px red solid; */
+}
+
+#btnAdd {
+    width: 8rem;
+    height: 3rem;
+    background-color: #48BF91;
+    color: rgb(244, 242, 247);
+    border: none;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    margin: 10px;
+  
+}
+
+.searchContainer{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: white;
+    width: 100%;
+    height: 60px;
+    /* background-color: black; */
+    
+}
+
+#search {
+    width: 40rem;
+    height: 2.5rem;
+    background-color: white;
+    margin: 10px;
+    border: 1px solid #48BF91;
+}
+
+#searchButton {
+        width: 8rem;
+        height: 3rem;
+        background-color: #48BF91;
+        color: rgb(244, 242, 247);
+        border: none;
+        border-radius: 20px;
+        font-size: 1rem;
+        font-weight: bold;
+        border-radius: 6px;
+}
+
+.taskForm {
+    margin: 0 auto;
+}
+
+label {
+    font-size: 1rem;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.taskBtn {
+    min-width: 6rem;
+    border: none;
+    border-radius: 8px;
+    padding-inline: 1rem;
+    padding-block: 0.5rem;
+    font-size: 1rem;
+    transition: all 300ms;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.taskSaveBtn {
+    background-color: #48BF91;
+    color: #fff;
+}
+.taskSaveBtn:hover, .taskSaveBtn:focus {
+    background-color: #368869;
+}
+
+.taskEditBtn {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.taskEditBtn:hover, .taskEditBtn:focus {
+    background-color: #2771a2;
+    color: #fff;
+}
+
+.taskDeleteBtn {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.taskDeleteBtn:hover,
+.taskDeleteBtn:focus {
+    background-color: #c73526;
+    color: #fff;
+}
+
+.task-list {
+    list-style-type: none;
+    padding: 0px;
+    margin: 0px;
+    color: black;
+}
+button:focus {
+    outline: none;
+}
+.task-list li {
+    background-color: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.sub-task-list {
+    list-style-type: flex;
+    padding: 0;
+    margin: 0;
+    padding-left: 50px;
+}
+
+.sub-task-list li {
+    display: flex;
+    padding: 20px;
+    border-left: 4px solid #eee;
+    border-radius: 0px;
+}
