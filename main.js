@@ -3,8 +3,15 @@ btnAddEl.addEventListener('click', () => {
   addNewTask()
 })
 
+const searchButtonEl = document.getElementById('searchButton')
+
+searchButtonEl.addEventListener('click', () => {
+  search = document.getElementById('searchInput').value.toLowerCase();
+  renderTasks();
+})
 const taskListEl = document.getElementById('taskList');
 
+let search = ''
 const tasks = [
   // {
   //   taskId: '1',
@@ -26,11 +33,18 @@ const tasks = [
   // }
 ]
 
+const deletedTasks = [];
+const editTasks = [];
+
 // func to add new task
 function addNewTask() {
+  search = ''
   tasks.push({
     taskId: '',
     taskName: '',
+    taskStartDate: '',
+    taskEndDate: '',
+    taskStatus: '',
     subTasks: [],
     _isEditing: true,
   })
@@ -39,6 +53,8 @@ function addNewTask() {
 
 //function to delete parent task
 function deleteTask(taskIdx){
+  deletedTasks.push(tasks[taskIdx])
+  // console.log('deleted tasks ',deletedTasks);
   tasks.splice(taskIdx,1);
   renderTasks();
 
@@ -49,48 +65,115 @@ function renderTasks() {
   // empty everything
   taskListEl.innerHTML = ''
   for (let i = 0; i < tasks.length; i++) {
+    if (isTaskInSearch(tasks[i]) === false) {
+      continue;
+    }
     const taskEl = document.createElement('li');
     taskEl.innerHTML = generateTaskHtml(i)
     taskListEl.appendChild(taskEl)
   }
 }
 
+// func to check if task is in search
+function isTaskInSearch(task) {
+  if(search.length < 1) {
+    return true;
+  }
+  if (String(task.taskId).toLowerCase().includes(search)) {
+    return true
+  }
+  if (String(task.taskName).toLowerCase().includes(search)) {
+    return true
+  }
+  if (task.taskStartDate && String(task.taskStartDate).toLowerCase().includes(search)) {
+    return true
+  }
+  if (task.taskStartDate && String(task.taskEndDate).toLowerCase().includes(search)) {
+    return true
+  }
+  if (task.taskStatus.toLowerCase().includes(search)) {
+    return true
+  }
+  const filteredSubTasks = task.subTasks.filter((subTask) => {
+    if(subTask.subId.toLowerCase().includes(search)) {
+      return true
+    }
+    if(subTask.subTaskName.toLowerCase().includes(search)) {
+      return true
+    }
+    if (subTask.subStartDate && String(task.subStartDate).toLowerCase().includes(search)) {
+      return true
+    }
+    if (subTask.subEndDate && String(task.subEndDate).toLowerCase().includes(search)) {
+      return true
+    }
+    if (subTask.subStatus.toLowerCase().includes(search)) {
+      return true
+    }
+  })
+  if (filteredSubTasks.length > 0) {
+    return true
+  }
+  return false
+}
+
 // func to generate task (single task) html
 function generateTaskHtml(idx) {
   const task = tasks[idx]
+  // const currentDate = new Date();
+
+  // Default option
+  // let statusOptions = '<option value="Completed">Completed</option>'; 
+
+  // if (currentDate > new Date(task.taskEndDate)) {
+  //   // If the current date is after the task's end date
+  //   statusOptions += '<option value="Due Passed">Due Passed</option>';
+  // }
+
+  // if (currentDate >= new Date(task.taskStartDate) && currentDate <= new Date(task.taskEndDate)) {
+  //   // If the current date is within the task's start and end dates
+  //   statusOptions += '<option value="In Progress">In Progress</option>';
+  // }
+
+  // statusOptions += '<option value="Canceled">Canceled</option>';
+
   if (task._isEditing) {
     return `<div class="taskForm">
-    
+    <form>
     <label for="task.${idx}.taskId">ID</label>
-    <input id="task.${idx}.taskId" type="number" value="${task.taskId}"/>
+    <input id="task.${idx}.taskId" type="number" value="${task.taskId}" oninput="onChangeTaskId(${idx})" required/>
+    <p style="color:red;" id="task.${idx}.taskId.error"></p>
     </br>
 
     <label for="task.${idx}.taskName">Name</label>
-    <input id="task.${idx}.taskName" type="text" value="${task.taskName}"/>
+    <input id="task.${idx}.taskName" type="text" value="${task.taskName}" required/>
+    <p style="color:red;" id="task.${idx}.taskName.error"></p>
     </br>
 
     <label for="task.${idx}.taskStartDate">Start</label>
-    <input id="task.${idx}.taskStartDate"type="datetime-local" value="${task.taskStartDate}" onchange="onChangeTaskDate(${idx})"/>
+    <input id="task.${idx}.taskStartDate"type="datetime-local" value="${task.taskStartDate}" onchange="onChangeTaskDate(${idx})" required/>
+    <p style="color:red;" id="task.${idx}.taskStartDate.error"></p>
     </br>
 
     <label for="task.${idx}.taskEndDate">End</label>
-    <input id="task.${idx}.taskEndDate" type="datetime-local" value="${task.taskEndDate}" onchange="onChangeTaskDate(${idx})"/>
+    <input id="task.${idx}.taskEndDate" type="datetime-local" value="${task.taskEndDate}" onchange="onChangeTaskDate(${idx})" required/>
     <p style="color:red;" id="task.${idx}.taskEndDate.error"></p>
     </br>
 
     <label for="task.${idx}.taskStatus">Status:</label>
-      <select id="task.${idx}.taskStatus">
+      <select id="task.${idx}.taskStatus" required>
         <option value="InProgress">InProgress</option>
         <option value="Completed">Completed</option>
         <option value="DuePassed">Due Passed</option>
         <option value="Cancelled">Cancelled</option>
       </select>
 
-    <button onClick="saveTask(${idx})" class="taskBtn taskSaveBtn">Save Task</button>
+    <button onClick="saveTask(${idx})" class="taskBtn taskSaveBtn" type="submit">Save Task</button>
     <button onClick="deleteTask(${idx})" class="taskBtn taskDeleteBtn">Delete</button>
     <ul class="sub-task-list">
       ${task.subTasks.map((_, subTaskIdx) => generateSubTaskHtml(idx, subTaskIdx))}
     </ul>
+    </form>
     </div>`
   } else {
     return `<div>
@@ -98,7 +181,7 @@ function generateTaskHtml(idx) {
     <h3>TaskName: ${task.taskName}</h3>
     <h3>Start Date: ${task.taskStartDate}</h3>
     <h3>End Date: ${task.taskEndDate}</h3>
-    <h3>Task Status: ${task.taskStatus}</h3>
+    <h3>Task Status: <span style="${getStatusStyle(task.taskStatus)}">${task.taskStatus}</span></h3>
 
     <ul class="sub-task-list">
       ${task.subTasks.map((_, subTaskIdx) => generateSubTaskHtml(idx, subTaskIdx) )}
@@ -152,7 +235,7 @@ function generateSubTaskHtml(taskIdx, subTaskIdx) {
           <h4>Sub TaskName: ${subTask.subTaskName}</h4>
           <h4>Sub Task Start Date: ${subTask.subStartDate}</h4>
           <h4>Sub Task End Date: ${subTask.subEndDate}</h4>
-          <h4>Sub Task Status: ${subTask.subStatus}</h4>
+          <h4>Sub Task Status: <span style="${getStatusStyle(subTask.subStatus)}">${subTask.subStatus}<span/></h4>
           <button onClick="editSubTask(${taskIdx}, ${subTaskIdx})" class="taskBtn taskEditBtn">Edit Sub Task</button>
           <button onClick="deleteSubTask(${taskIdx}, ${subTaskIdx})" class="taskBtn taskDeleteBtn">Delete Sub Task</button>
         </div>
@@ -161,22 +244,68 @@ function generateSubTaskHtml(taskIdx, subTaskIdx) {
   }
 }
 
+// func to get status class name
+function getStatusStyle(status) {
+  if (status === 'InProgress') {
+    return "color: yellow;"
+  } else if (status === 'Completed') {
+    return "color: green;"
+  } else if (status === 'Due Passed') {
+    return "color: red;"
+  } else if (status === 'Cancelled') {
+    return "color: gray;"
+  }
+  return "color: red;"
+}
+
 // func to set it editing
 function editTask(idx) {
   tasks[idx]._isEditing = true
   renderTasks()
 }
 
+
 // func to save task
 function saveTask(idx) {
-  tasks[idx].taskId = document.getElementById(`task.${idx}.taskId`).value
-  tasks[idx].taskName = document.getElementById(`task.${idx}.taskName`).value
-  tasks[idx].taskStartDate = document.getElementById(`task.${idx}.taskStartDate`).value
-  tasks[idx].taskEndDate = document.getElementById(`task.${idx}.taskEndDate`).value
-  tasks[idx].taskStatus = document.getElementById(`task.${idx}.taskStatus`).value
-  tasks[idx]._isEditing = false
-  renderTasks()
+  //new code by me of save
+  const taskIdInput = document.getElementById(`task.${idx}.taskId`);
+  const taskNameInput = document.getElementById(`task.${idx}.taskName`);
+  const taskStartDateInput = document.getElementById(`task.${idx}.taskStartDate`);
+  const taskEndDateInput = document.getElementById(`task.${idx}.taskEndDate`);
+
+  if (
+    !taskIdInput.value ||
+    !taskNameInput.value ||
+    !taskStartDateInput.value ||
+    !taskEndDateInput.value
+  ) {
+    alert("Please fill in all inputs required for Tasks fields.");
+    return;
+  } else {
+    tasks[idx].taskId = taskIdInput.value;
+    tasks[idx].taskName = taskNameInput.value;
+    tasks[idx].taskStartDate = taskStartDateInput.value;
+    tasks[idx].taskEndDate = taskEndDateInput.value;
+    tasks[idx].taskStatus = document.getElementById(`task.${idx}.taskStatus`).value;
+    tasks[idx]._isEditing = false;
+    renderTasks();
+  }
+  //new code ends here
+
+
+  //previous code starts here
+
+  // tasks[idx].taskId = document.getElementById(`task.${idx}.taskId`).value
+  // tasks[idx].taskName = document.getElementById(`task.${idx}.taskName`).value
+  // tasks[idx].taskStartDate = document.getElementById(`task.${idx}.taskStartDate`).value
+  // tasks[idx].taskEndDate = document.getElementById(`task.${idx}.taskEndDate`).value
+  // tasks[idx].taskStatus = document.getElementById(`task.${idx}.taskStatus`).value
+  // tasks[idx]._isEditing = false
+  // renderTasks()
+
+  //previous code ends here
 }
+
 
 // func to add sub task
 function addSubTask(idx) {
@@ -192,7 +321,6 @@ function addSubTask(idx) {
 function deleteSubTask(taskIdx, subTaskIdx) {
   tasks[taskIdx].subTasks.splice(subTaskIdx, 1);
   renderTasks()
- 
 }
 
 // func to set sub task editing
@@ -201,16 +329,57 @@ function editSubTask(taskIdx, subTaskIdx) {
   renderTasks()
 }
 
+
 // func to save sub tasdk
 function saveSubTask(taskIdx, subTaskIdx) {
-  tasks[taskIdx].subTasks[subTaskIdx].subTaskName = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subTaskName`).value
-  tasks[taskIdx].subTasks[subTaskIdx].subStartDate = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStartDate`).value
-  tasks[taskIdx].subTasks[subTaskIdx].subEndDate = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subEndDate`).value
-  tasks[taskIdx].subTasks[subTaskIdx].subStatus = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStatus`).value
-  tasks[taskIdx].subTasks[subTaskIdx]._isEditing = false
 
-  renderTasks()
+  const subTaskNameInput = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subTaskName`);
+  const subTaskStartDateInput = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStartDate`);
+  const subTaskEndDateInput = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subEndDate`);
+
+  if (
+    !subTaskNameInput.value ||
+    !subTaskStartDateInput.value ||
+    !subTaskEndDateInput.value
+  ) {
+    alert("Please fill in all input required for sub tasks fields.");
+    return;
+  } else {
+    tasks[taskIdx].subTasks[subTaskIdx].subTaskName = subTaskNameInput.value;
+    tasks[taskIdx].subTasks[subTaskIdx].subStartDate = subTaskStartDateInput.value;
+    tasks[taskIdx].subTasks[subTaskIdx].subEndDate = subTaskEndDateInput.value;
+    tasks[taskIdx].subTasks[subTaskIdx].subStatus = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStatus`).value;
+    tasks[taskIdx].subTasks[subTaskIdx]._isEditing = false;
+    renderTasks();
+  }
+
+  //previous code start
+
+  // tasks[taskIdx].subTasks[subTaskIdx].subTaskName = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subTaskName`).value
+  // tasks[taskIdx].subTasks[subTaskIdx].subStartDate = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStartDate`).value
+  // tasks[taskIdx].subTasks[subTaskIdx].subEndDate = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subEndDate`).value
+  // tasks[taskIdx].subTasks[subTaskIdx].subStatus = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStatus`).value
+  // tasks[taskIdx].subTasks[subTaskIdx]._isEditing = false
+
+  // renderTasks()
+
+  //previous code ends here
 }
+
+
+//function to validate id
+function onChangeTaskId(taskIdx) {
+  const taskIdValue = document.getElementById(`task.${taskIdx}.taskId`).value
+  const errorElement = document.getElementById(`task.${taskIdx}.taskId.error`)
+  if (!errorElement) return
+  const idx = tasks.findIndex(t => t.taskId === taskIdValue)
+  if (idx >= 0 && idx !== taskIdx){
+    errorElement.innerHTML = "Task with id " + taskIdValue + " already exists."
+  } else {
+    errorElement.innerHTML = ''
+  }
+}
+
 
 // func to handle date change
 function onChangeTaskDate(taskIdx) {
@@ -256,6 +425,11 @@ function onChangeSubTaskDate(taskIdx, subTaskIdx) {
   }
   errorElement.innerText = ''
 }
+
+
+
+
+
 
 // intital render
 document.addEventListener('DOMContentLoaded', () => {
