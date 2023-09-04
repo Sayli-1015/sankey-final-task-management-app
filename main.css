@@ -154,3 +154,9 @@ button:focus {
     border-left: 4px solid #eee;
     border-radius: 0px;
 }
+
+button:disabled, button:disabled:hover {
+    background-color: #ccc;
+    color: #888;
+    cursor: not-allowed;
+}
