@@ -7,11 +7,15 @@ const searchButtonEl = document.getElementById('searchButton')
 
 searchButtonEl.addEventListener('click', () => {
   search = document.getElementById('searchInput').value.toLowerCase();
+  isTaskFound = false;
   renderTasks();
 })
+
+
 const taskListEl = document.getElementById('taskList');
 
 let search = ''
+let isTaskFound = false; 
 const tasks = [
   // {
   //   taskId: '1',
@@ -30,96 +34,121 @@ const tasks = [
   //     }
   //   ],
   //   _isEditing: false,
+  //  _isDeleted: false,
   // }
 ]
 
+
 // func to render tasks
+// function renderTasks() {
+//   // empty everything
+//   taskListEl.innerHTML = ''
+//   for (let i = 0; i < tasks.length; i++) {
+//     if (tasks[i]._isDeleted === true) {
+//       continue;
+//     }
+//     if (isTaskInSearch(tasks[i]) === false) {
+//       continue;
+//     }
+//     const taskEl = document.createElement('li');
+//     taskEl.innerHTML = generateTaskHtml(i)
+//     taskListEl.appendChild(taskEl)
+//   }
+
+//   initalValidation()
+// }
+
 function renderTasks() {
-  // empty everything
-  taskListEl.innerHTML = ''
-  for (let i = 0; i < tasks.length; i++) {
-    if (tasks[i]._isDeleted === true) {
-      continue;
-    }
-    if (isTaskInSearch(tasks[i]) === false) {
-      continue;
-    }
-    const taskEl = document.createElement('li');
-    taskEl.innerHTML = generateTaskHtml(i)
-    taskListEl.appendChild(taskEl)
+  const matchingTasks = tasks.filter((task) => {
+    return !task._isDeleted && isTaskInSearch(task);
+  });
+
+  taskListEl.innerHTML = '';
+
+  if (search !== '' && matchingTasks.length === 0) {
+    taskListEl.innerHTML = '<p class="no-records">No records found.</p>';
+    return;
   }
 
-  initalValidation()
+  matchingTasks.forEach((task, idx) => {
+    const taskEl = document.createElement('li');
+    taskEl.innerHTML = generateTaskHtml(idx);
+    taskListEl.appendChild(taskEl);
+  });
+
+  initalValidation();
 }
+
+
+
+
+
 
 
 
 // func to check if task is in search
 function isTaskInSearch(task) {
-  if(search.length < 1) {
+  if (search.length < 1) {
+    isTaskFound = true; 
     return true;
   }
   if (String(task.taskId).toLowerCase().includes(search)) {
+    isTaskFound = true; 
     return true
   }
   if (String(task.taskName).toLowerCase().includes(search)) {
+    isTaskFound = true; 
     return true
   }
   if (task.taskStartDate && String(task.taskStartDate).toLowerCase().includes(search)) {
+    isTaskFound = true; 
     return true
   }
   if (task.taskStartDate && String(task.taskEndDate).toLowerCase().includes(search)) {
+    isTaskFound = true; 
     return true
   }
   if (task.taskStatus.toLowerCase().includes(search)) {
+    isTaskFound = true; 
     return true
   }
+
   const filteredSubTasks = task.subTasks.filter((subTask) => {
-    if(subTask.subId.toLowerCase().includes(search)) {
+    if (subTask.subId.toLowerCase().includes(search)) {
+      isTaskFound = true; 
       return true
     }
-    if(subTask.subTaskName.toLowerCase().includes(search)) {
+    if (subTask.subTaskName.toLowerCase().includes(search)) {
+      isTaskFound = true; 
       return true
     }
     if (subTask.subStartDate && String(task.subStartDate).toLowerCase().includes(search)) {
+      isTaskFound = true; 
       return true
     }
     if (subTask.subEndDate && String(task.subEndDate).toLowerCase().includes(search)) {
+      isTaskFound = true; 
       return true
     }
     if (subTask.subStatus.toLowerCase().includes(search)) {
+      isTaskFound = true; 
       return true
     }
-  })
+    return false;
+  });
   if (filteredSubTasks.length > 0) {
     return true
   }
   return false
 }
 
-// func to generate task (single task) html
+
+// func to generate Parent task  html
 function generateTaskHtml(idx) {
   const task = tasks[idx]
-  // const currentDate = new Date();
-
-  // Default option
-  // let statusOptions = '<option value="Completed">Completed</option>'; 
-
-  // if (currentDate > new Date(task.taskEndDate)) {
-  //   // If the current date is after the task's end date
-  //   statusOptions += '<option value="Due Passed">Due Passed</option>';
-  // }
-
-  // if (currentDate >= new Date(task.taskStartDate) && currentDate <= new Date(task.taskEndDate)) {
-  //   // If the current date is within the task's start and end dates
-  //   statusOptions += '<option value="In Progress">In Progress</option>';
-  // }
-
-  // statusOptions += '<option value="Canceled">Canceled</option>';
 
   if (task._isEditing) {
     return `<div class="taskForm" onload="alert('hello')">
-    <form>
     <label for="task.${idx}.taskId">ID</label>
     <input id="task.${idx}.taskId" type="number" value="${task.taskId}" oninput="validateTask(${idx})" required/>
     <p style="color:red;" id="task.${idx}.taskId.error"></p>
@@ -141,7 +170,7 @@ function generateTaskHtml(idx) {
     </br>
 
     <label for="task.${idx}.taskStatus">Status:</label>
-      <select id="task.${idx}.taskStatus" required>
+      <select id="task.${idx}.taskStatus" onchange="validateTask(${idx})" required>
       <option value="InProgress">InProgress</option>
       <option value="Completed">Completed</option>
       <option value="DuePassed">Due Passed</option>
@@ -153,11 +182,10 @@ function generateTaskHtml(idx) {
     <ul class="sub-task-list">
       ${task.subTasks.map((_, subTaskIdx) => generateSubTaskHtml(idx, subTaskIdx))}
     </ul>
-    </form>
     </div>`
   } else {
-    return `<div>
-    <h3>TaskID: ${task.taskId}</h3>
+    return `<div class="taskContainer">
+    <h3>TaskID: ${task.taskId}</h3><span class="assignedDays"><h3>Assigned Days: ${calculateTaskDuration(task)}</h3></span>
     <h3>TaskName: ${task.taskName}</h3>
     <h3>Start Date: ${task.taskStartDate}</h3>
     <h3>End Date: ${task.taskEndDate}</h3>
@@ -172,6 +200,7 @@ function generateTaskHtml(idx) {
     </div>`
   }
 }
+
 
 function generateSubTaskHtml(taskIdx, subTaskIdx) {
   const subTask = tasks[taskIdx].subTasks[subTaskIdx]
@@ -194,12 +223,10 @@ function generateSubTaskHtml(taskIdx, subTaskIdx) {
         <input id="task.${taskIdx}.subtask.${subTaskIdx}.subEndDate" type="datetime-local" value="${subTask.subEndDate}" onChange="validateSubTask(${taskIdx}, ${subTaskIdx})"/>
         <p style="color:red;" id="task.${taskIdx}.subtask.${subTaskIdx}.subEndDate.error"></p>
         </br>
-
-    
-
+        
       <label for="task.${taskIdx}.subtask.${subTaskIdx}.subStatus">Status:</label>
-      <select id="task.${taskIdx}.subtask.${subTaskIdx}.subStatus">
-        <option value="InProgress">InProgress</option>
+      <select id="task.${taskIdx}.subtask.${subTaskIdx}.subStatus" onChange="validateSubTask(${taskIdx}, ${subTaskIdx})">
+        <option value="InProgress">In Progress</option>
         <option value="Completed">Completed</option>
         <option value="DuePassed">Due Passed</option>
         <option value="Cancelled">Cancelled</option>
@@ -214,10 +241,11 @@ function generateSubTaskHtml(taskIdx, subTaskIdx) {
     return `
       <li>
         <div>
-          <h4>Sub ID: ${subTask.subId}</h4>
+          <h4>Sub ID: ${subTask.subId}</h4><span class="assignedDays">Assigned Days: ${calculateSubTaskDuration(subTask)}</span>
           <h4>Sub TaskName: ${subTask.subTaskName}</h4>
           <h4>Sub Task Start Date: ${subTask.subStartDate}</h4>
           <h4>Sub Task End Date: ${subTask.subEndDate}</h4>
+          
           <h4>Sub Task Status: <span style="${getStatusStyle(subTask.subStatus)}">${subTask.subStatus}<span/></h4>
           <button onClick="editSubTask(${taskIdx}, ${subTaskIdx})" class="taskBtn taskEditBtn">Edit Sub Task</button>
           <button onClick="deleteSubTask(${taskIdx}, ${subTaskIdx})" class="taskBtn taskDeleteBtn">Delete Sub Task</button>
@@ -227,23 +255,48 @@ function generateSubTaskHtml(taskIdx, subTaskIdx) {
   }
 }
 
+
+
+//func to calculate Task Durattion
+function calculateTaskDuration(task) {
+  const startDate = new Date(task.taskStartDate);
+  const endDate = new Date(task.taskEndDate);
+  // time difference in milliseconds
+  const timeDifference = endDate - startDate;
+  // Convert milliseconds to days and round down to the nearest integer
+  const daysAssigned = Math.floor(timeDifference / (24 * 60 * 60 * 1000)) + 1;
+  return daysAssigned;
+}
+
+
+//func to calculate subTask Duration
+function calculateSubTaskDuration(subTask) {
+  const startDate = new Date(subTask.subStartDate);
+  const endDate = new Date(subTask.subEndDate);
+  // time difference in milliseconds
+  const timeDifference = endDate - startDate;
+  // Convert milliseconds to days and round down to the nearest integer
+  const daysAssigned = Math.floor(timeDifference / (24 * 60 * 60 * 1000)) + 1;
+  return daysAssigned;
+}
+
+
+
+
 // func to get status class name
 function getStatusStyle(status) {
   if (status === 'InProgress') {
-    // #3498db or #2980b9.
     return "color: #3498db;"
   } else if (status === 'Completed') {
-    //#2ecc71 or #27ae60
     return "color: #2ecc71;"
   } else if (status === 'Due Passed') {
-    //#e74c3c or #c0392b
     return "color: #e74c3c;"
   } else if (status === 'Cancelled') {
-    //#95a5a6 or #bdc3c7
     return "color: #95a5a6;"
   }
   return "color: red;"
 }
+
 
 // func to add new task
 function addNewTask() {
@@ -261,11 +314,13 @@ function addNewTask() {
   renderTasks();
 }
 
+
 //function to delete parent task
 function deleteTask(taskIdx) {
   tasks[taskIdx]._isDeleted = true
   renderTasks();
 }
+
 
 // func to set it editing
 function editTask(idx) {
@@ -282,15 +337,6 @@ function saveTask(idx) {
   const taskStartDateInput = document.getElementById(`task.${idx}.taskStartDate`);
   const taskEndDateInput = document.getElementById(`task.${idx}.taskEndDate`);
 
-  if (
-    !taskIdInput.value ||
-    !taskNameInput.value ||
-    !taskStartDateInput.value ||
-    !taskEndDateInput.value
-  ) {
-    alert("Please fill in all inputs required for Tasks fields.");
-    return;
-  } else {
     tasks[idx].taskId = taskIdInput.value;
     tasks[idx].taskName = taskNameInput.value;
     tasks[idx].taskStartDate = taskStartDateInput.value;
@@ -298,7 +344,7 @@ function saveTask(idx) {
     tasks[idx].taskStatus = document.getElementById(`task.${idx}.taskStatus`).value;
     tasks[idx]._isEditing = false;
     renderTasks();
-  }
+  
 }
 
 
@@ -313,12 +359,14 @@ function addSubTask(idx) {
   renderTasks()
 }
 
+
 //func to delete subtask
 function deleteSubTask(taskIdx, subTaskIdx) {
   tasks[taskIdx].subTasks[subTaskIdx]._isDeleted = true
   console.log(tasks)
   renderTasks()
 }
+
 
 // func to set sub task editing
 function editSubTask(taskIdx, subTaskIdx) {
@@ -327,41 +375,22 @@ function editSubTask(taskIdx, subTaskIdx) {
 }
 
 
-// func to save sub tasdk
+// func to save sub task
 function saveSubTask(taskIdx, subTaskIdx) {
 
   const subTaskNameInput = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subTaskName`);
   const subTaskStartDateInput = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStartDate`);
   const subTaskEndDateInput = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subEndDate`);
 
-  if (
-    !subTaskNameInput.value ||
-    !subTaskStartDateInput.value ||
-    !subTaskEndDateInput.value
-  ) {
-    alert("Please fill in all input required for sub tasks fields.");
-    return;
-  } else {
     tasks[taskIdx].subTasks[subTaskIdx].subTaskName = subTaskNameInput.value;
     tasks[taskIdx].subTasks[subTaskIdx].subStartDate = subTaskStartDateInput.value;
     tasks[taskIdx].subTasks[subTaskIdx].subEndDate = subTaskEndDateInput.value;
     tasks[taskIdx].subTasks[subTaskIdx].subStatus = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStatus`).value;
     tasks[taskIdx].subTasks[subTaskIdx]._isEditing = false;
     renderTasks();
-  }
-
-  //previous code start
-
-  // tasks[taskIdx].subTasks[subTaskIdx].subTaskName = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subTaskName`).value
-  // tasks[taskIdx].subTasks[subTaskIdx].subStartDate = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStartDate`).value
-  // tasks[taskIdx].subTasks[subTaskIdx].subEndDate = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subEndDate`).value
-  // tasks[taskIdx].subTasks[subTaskIdx].subStatus = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStatus`).value
-  // tasks[taskIdx].subTasks[subTaskIdx]._isEditing = false
-
-  // renderTasks()
-
-  //previous code ends here
+  
 }
+
 
 // func to validate task values
 function validateTask(taskIdx) {
@@ -375,9 +404,10 @@ function validateTask(taskIdx) {
   const taskBtnEl = document.getElementById(`task.${taskIdx}.saveBtn`)
 
   let hasErrors = false;
-  
+
   // task id validation
   const idx = tasks.findIndex(t => t.taskId === taskIdValue)
+  
   if (idx >= 0 && idx !== taskIdx) {
     taskIdErrEl.innerHTML = "Task with id " + taskIdValue + " already exists."
     hasErrors = true
@@ -402,8 +432,32 @@ function validateTask(taskIdx) {
     taskEndDateErrEl.innerText = ''
   }
 
+  // task status validation
+  const statusInputEl = document.getElementById(`task.${taskIdx}.taskStatus`)
+  const InProgressEl = statusInputEl.querySelector('[value="InProgress"]')
+  const duePassedEl = statusInputEl.querySelector('[value="DuePassed"]')
+  const today = new Date()
+  if (endDate) {
+    if (today <= new Date(endDate)) {
+      InProgressEl.disabled = false
+      duePassedEl.disabled = true
+      if (statusInputEl.value === 'DuePassed') {
+        statusInputEl.value = ''
+        hasErrors = true
+      }
+    } else {
+      InProgressEl.disabled = true
+      duePassedEl.disabled = false
+      if (statusInputEl.value === 'InProgress') {
+        statusInputEl.value = ''
+        hasErrors = true
+      }
+    }
+  }
+
   taskBtnEl.disabled = hasErrors
 }
+
 
 // func to validate sub task values
 function validateSubTask(taskIdx, subTaskIdx) {
@@ -441,16 +495,40 @@ function validateSubTask(taskIdx, subTaskIdx) {
     subTaskEndDateErrEl.innerText = ''
   }
 
+  // sub task status validation
+  const statusInputEl = document.getElementById(`task.${taskIdx}.subtask.${subTaskIdx}.subStatus`)
+  const InProgressEl = statusInputEl.querySelector('[value="InProgress"]')
+  const duePassedEl = statusInputEl.querySelector('[value="DuePassed"]')
+  const today = new Date()
+  if (subTaskEndDate) {
+    if (today <= new Date(subTaskEndDate)) {
+      InProgressEl.disabled = false
+      duePassedEl.disabled = true
+      if (statusInputEl.value === 'DuePassed') {
+        statusInputEl.value = ''
+        hasErrors = true
+      }
+    } else {
+      InProgressEl.disabled = true
+      duePassedEl.disabled = false
+      if (statusInputEl.value === 'InProgress') {
+        statusInputEl.value = ''
+        hasErrors = true
+      }
+    }
+  }
+
   subTaskBtn.disabled = hasErrors
 }
 
+
 function initalValidation() {
-  for(let i = 0; i<tasks.length; i++) {
+  for (let i = 0; i < tasks.length; i++) {
     const el = document.getElementById(`task.${i}.saveBtn`)
-    if(el) {
+    if (el) {
       validateTask(i)
     }
-    for(let j=0; j<tasks[i].subTasks.length; j++) {
+    for (let j = 0; j < tasks[i].subTasks.length; j++) {
       const el = document.getElementById(`task.${i}.subtask.${j}.saveBtn`)
       if (el) {
         validateSubTask(i, j)
@@ -458,9 +536,6 @@ function initalValidation() {
     }
   }
 }
-
-
-
 
 
 
